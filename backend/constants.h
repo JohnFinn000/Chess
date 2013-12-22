@@ -75,29 +75,6 @@ enum pieces {
 #define WHITE_KING     WHITE_OFFSET + KING_LAYER
 #define WHITE_QUEEN    WHITE_OFFSET + QUEEN_LAYER
 
-char piece_symbols[] = {
-'P',
-'R',
-'B',
-'N',
-'K',
-'Q',
-};
-
-const char *piece_name[] = {
-"BLACK_PAWN",
-"BLACK_ROOK",
-"BLACK_BISCHOPS",
-"BLACK_KNIGHTS",
-"BLACK_KING",
-"BLACK_QUEEN",
-"WHITE_PAWN",
-"WHITE_ROOK",
-"WHITE_BISCHOPS",
-"WHITE_KNIGHTS",
-"WHITE_KING",
-"WHITE_QUEEN",
-};
 
 const uint64_t initial_black_pawns    = 0x00FF000000000000;
 const uint64_t initial_black_rooks    = 0x8100000000000000;
@@ -196,6 +173,41 @@ const uint64_t coord_table[8][8] = {
 #define KNIGHT_MOVEMENT( x, y )  ( knight_movement[x][y] )
 #define KING_MOVEMENT( x, y )    ( king_movement[x][y] )
 
+// special board locations
+#define WHITE_PAWN_HOME
+#define WHITE_QUEENSIDE_CASTLE_SQUARE coord_table[0][6]
+#define WHITE_KINGSIDE_CASTLE_SQUARE coord_table[0][1]
+#define BLACK_QUEENSIDE_CASTLE_SQUARE coord_table[7][6]
+#define BLACK_KINGSIDE_CASTLE_SQUARE coord_table[7][1]
+
+// special calculations
+
+const uint64_t fill_right_table[8] = { // this can be done by subtraction too
+0xFF,
+0x7F,
+0x3F,
+0x1F,
+0x0F,
+0x07,
+0x03,
+0x01,
+};
+
+const uint64_t fill_down_table[8] = {
+0x101010101010101,
+0x001010101010101,
+0x000010101010101,
+0x000000101010101,
+0x000000001010101,
+0x000000000010101,
+0x000000000000101,
+0x000000000000001,
+};
+
+#define FILL_RIGHT( coord, x ) coord * fill_right_table[x]
+#define FILL_LEFT( coord, y )  coord - coord_table[0][y]
+#define FILL_DOWN( coord, x ) coord * fill_down_table[x]
+#define FILL_UP( coord, x, y ) coord_table[x][0] * fill_down_table[7-y]
 
 const uint64_t black_squares = 0xAA55AA55AA55AA55;
 const uint64_t white_squares = 0x55AA55AA55AA55AA;
@@ -216,5 +228,52 @@ struct error_code {
 	int error_num;
 	char error_name[80];
 
+};
+
+char piece_symbols[] = {
+'P',
+'R',
+'B',
+'N',
+'K',
+'Q',
+};
+
+const char *piece_name[] = {
+"BLACK_PAWN",
+"BLACK_ROOK",
+"BLACK_BISCHOPS",
+"BLACK_KNIGHTS",
+"BLACK_KING",
+"BLACK_QUEEN",
+"WHITE_PAWN",
+"WHITE_ROOK",
+"WHITE_BISCHOPS",
+"WHITE_KNIGHTS",
+"WHITE_KING",
+"WHITE_QUEEN",
+};
+
+const char *flag_name[] = {
+"white queenside castle",
+"white kingside castle",
+"white en passant A",
+"white en passant B",
+"white en passant C",
+"white en passant D",
+"white en passant E",
+"white en passant F",
+"white en passant G",
+"white en passant H",
+"black queenside castle",
+"black kingside castle",
+"black en passant A",
+"black en passant B",
+"black en passant C",
+"black en passant D",
+"black en passant E",
+"black en passant F",
+"black en passant G",
+"black en passant H",
 };
 

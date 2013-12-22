@@ -67,8 +67,34 @@ uint64_t Board::get_pawn_attack( int x, int y, int side ) {
 
 uint64_t Board::get_rook_moves( int x, int y, int side ) {
 	
-	//ROOK_MOVEMENT( x, y ) & get_all()
-	return ROOK_MOVEMENT( x, y );
+	uint64_t movement = ROOK_MOVEMENT( x, y ) & ~get_all();
+	uint64_t coord = coord_table[x][y];
+    uint64_t temp = coord;
+	for( int i = x+1; i < 8; ++i ) { // right
+        if( !(movement & (temp <<= 1)) ) {
+            // erase from here onward
+            movement &= ~FILL_RIGHT( temp, x );
+        }
+    }
+	for( int i = x-1; i >= 0; --i ) { // left
+        if( !(movement & (temp /= 2)) ) {
+            // erase from here onward
+            movement &= ~FILL_LEFT( temp, y );
+        }
+    }
+	for( int i = y-1; i >= 0; --i ) { // up
+        if( !(movement & (temp /= 256)) ) {
+            // erase from here onward
+            movement &= ~FILL_UP( temp, x, y );
+        }
+    }
+	for( int i = y+1; i < 8; ++i ) { // down
+        if( !(movement & (temp *= 256)) ) {
+            // erase from here onward
+            movement &= ~FILL_DOWN( temp, x );
+        }
+    }
+	return movement;
 }
 
 uint64_t Board::get_rook_attack( int x, int y, int side ) {
@@ -135,6 +161,17 @@ uint64_t Board::get_queen_attack( int x, int y, int side ) {
 	}
 }
 
+uint64_t Board::get_under_attack( int x, int y, int side ) {
+
+    return get_pawn_attack( x, y, side ) |
+            get_rook_attack( x, y, side ) |
+            get_bischop_attack( x, y, side ) |
+            get_knight_attack( x, y, side ) |
+            get_king_attack( x, y, side ) |
+            get_queen_attack( x, y, side );
+}
+
+
 void Board::reset() {
 	// set the whole board back to the initial starting locations
 	board[BLACK_PAWN]     = initial_black_pawns;
@@ -150,7 +187,78 @@ void Board::reset() {
 	board[WHITE_KNIGHTS]  = initial_white_knights;
 	board[WHITE_KING]     = initial_white_king;
 	board[WHITE_QUEEN]    = initial_white_queen;
+
+    flags = 0xC03; // en passant flags off and castling flags on
 }
+
+void Board::move( int fx, int fy, int tx, int ty ) {
+
+    move_data new_move;
+    new_move.from_column = fx;
+    new_move.from_row = fy;
+    new_move.to_column = tx;
+    new_move.to_row = ty;
+
+	int layer = get_layer( fx, fy );
+    new_move.piece = layer % 6;
+
+	int attack = get_layer( tx, ty );
+    if( attack != 12 ) {
+        board[attack] &= ~coord_table[tx][ty];
+        new_move.capture = 1;
+    } else {
+        new_move.capture = 0;
+    }
+
+    // look for check
+    
+    // castling
+    if( layer == WHITE_KING ) {
+        if( coord_table[tx][ty] & WHITE_QUEENSIDE_CASTLE_SQUARE ) {
+            if( flags & white_queenside_castle ) {
+                new_move.castle = 2;
+                flags &= ~white_castle; // no more castling
+            }
+        } else if( coord_table[tx][ty] & WHITE_KINGSIDE_CASTLE_SQUARE ) {
+            if( flags & white_kingside_castle ) {
+                new_move.castle = 1;
+                flags &= ~white_castle; // no more castling
+            }
+        }
+    }
+
+    if( layer == BLACK_KING ) { // is it a king
+        if( coord_table[tx][ty] & BLACK_QUEENSIDE_CASTLE_SQUARE ) {
+            if( flags & black_kingside_castle ) {
+                new_move.castle = 2;
+                flags &= ~black_castle; // no more castling
+            }
+        } else if( coord_table[tx][ty] & BLACK_KINGSIDE_CASTLE_SQUARE ) {
+            if( flags & black_kingside_castle ) {
+                new_move.castle = 1;
+                flags &= ~black_castle; // no more castling
+            }
+        }
+    }
+
+    // move the actual piece
+    board[layer] &= ~coord_table[fx][fy];
+    board[layer] |= coord_table[tx][ty];
+
+    
+    struct move_data {
+        int piece       : 3;
+        int from_column : 3;
+        int from_row    : 3;
+        int to_column   : 3;
+        int to_row      : 3;
+
+        int capture : 1; // 0 - false, 1 - true
+        int check   : 2; // 0 - false, 1 - check, 2 - mate
+        int castle  : 2; // 0 - false, 1 - kingside, 2 - queenside
+    };
+}
+
 
 // finds the layer that has a piece on the coordinate specified
 // returns 12 if there is no piece on that place
@@ -222,6 +330,14 @@ void Board::print_board() {
 	printf("\n");
 }
 
+void Board::print_flags() {
+    
+	for( int i = 0; i < 20; ++i ) {
+
+        printf(" [%c]   %s\n", (flags & 1 << i) ? 'X' : ' ', flag_name[i] );
+	}
+}
+
 void Board::print_bitboard() {
 	for( int i = 0; i < 12; ++i ) {
         printf("%s\n", piece_name[i] );
@@ -268,32 +384,78 @@ int Engine::move( int fx, int fy, int tx, int ty ) {
 		return ERR_NO_PIECE; // there was no piece at the specified location
 	}
 
-    // move the actual piece
-    board->board[layer] &= ~coord_table[fx][fy];
-    board->board[layer] |= coord_table[tx][ty];
-
 	switch( layer ) {
 	// Black layers
 	case BLACK_PAWN:
-		if( fy == 6 ) {
-
-		}
+        if( fx == tx ) {
+            if( fy == 6 ) { // still in home row
+                if( ty == 4 ) {
+                    
+                    
+                    
+                }
+            }
+        }
+        break;
 	case BLACK_ROOK:
+        if( coord_table[tx][ty] & board->get_rook_moves( fx, fy, BLACK ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case BLACK_BISCHOPS:
+        if( coord_table[tx][ty] & board->get_bischop_moves( fx, fy, BLACK ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case BLACK_KNIGHTS:
+        if( coord_table[tx][ty] & board->get_knight_moves( fx, fy, BLACK ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case BLACK_KING:
+        if( coord_table[tx][ty] & board->get_king_moves( fx, fy, BLACK ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case BLACK_QUEEN:
+        if( coord_table[tx][ty] & board->get_queen_moves( fx, fy, BLACK ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 
 	// White layers
 	case WHITE_PAWN:
-		if( fy == 1 ) {
-
+		if( fy == 1 ) { // still in home row
+            if( ty == 3 ) {
+                
+                
+            }
 		}
+        break;
 	case WHITE_ROOK:
+        if( coord_table[tx][ty] & board->get_rook_moves( fx, fy, WHITE ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case WHITE_BISCHOPS:
+        if( coord_table[tx][ty] & board->get_bischop_moves( fx, fy, WHITE ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case WHITE_KNIGHTS:
+        if( coord_table[tx][ty] & board->get_knight_moves( fx, fy, WHITE ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case WHITE_KING:
+        if( coord_table[tx][ty] & board->get_king_moves( fx, fy, WHITE ) ) {
+            board->move( fx, fy, tx, ty );
+        }
+        break;
 	case WHITE_QUEEN:
+        if( coord_table[tx][ty] & board->get_queen_moves( fx, fy, WHITE ) ) {
+            board->move( fx, fy, tx, ty );
+        }
 		break;
 	}
 
@@ -398,9 +560,17 @@ int main() {
         printf("> ");
         fgets( buffer, 32, stdin );
         if( strncmp( "show", buffer, 4 ) == 0 ) {
+            char second_option[10];
+            sscanf( buffer, "%*s %s", second_option );
+            printf("%s\n", second_option );
+            if( strncmp( "rook", second_option, 4 ) == 0 ) {
+                board->print_bitboard( board->get_rook_moves( 4, 4, 0 ) );
+            }
             board->print_board();
         } else if( strncmp( "display", buffer, 7 ) == 0 ) {
             board->print_bitboard();
+        } else if( strncmp( "flag", buffer, 4 ) == 0 ) {
+            board->print_flags();
         } else {
             printf("%d %d %d %d %d\n", to_number(buffer[0]), to_number( buffer[1] ), to_number(buffer[2]), to_number( buffer[3] ),
             engine->move( to_number(buffer[0]), to_number(buffer[1]), to_number(buffer[2]), to_number(buffer[3]) ) );
