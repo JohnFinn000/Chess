@@ -82,12 +82,12 @@ uint64_t Board::get_rook_moves( int x, int y, int side ) {
             movement &= ~FILL_LEFT( temp, y );
         }
     }
-	for( int i = y-1; i >= 0; --i ) { // up
-        if( !(movement & (temp /= 256)) ) {
-            // erase from here onward
-            movement &= ~FILL_UP( temp, x, y );
-        }
-    }
+	//for( int i = y-1; i >= 0; --i ) { // up
+    //    if( !(movement & (temp /= 256)) ) {
+    //        // erase from here onward
+    //        movement = FILL_UP( temp, x, i );
+    //    }
+    //}
 	for( int i = y+1; i < 8; ++i ) { // down
         if( !(movement & (temp *= 256)) ) {
             // erase from here onward
@@ -229,7 +229,7 @@ void Board::move( int fx, int fy, int tx, int ty ) {
 
     if( layer == BLACK_KING ) { // is it a king
         if( coord_table[tx][ty] & BLACK_QUEENSIDE_CASTLE_SQUARE ) {
-            if( flags & black_kingside_castle ) {
+            if( flags & black_queenside_castle ) {
                 new_move.castle = 2;
                 flags &= ~black_castle; // no more castling
             }
@@ -477,34 +477,6 @@ int to_number( char letter ) {
     return -1; // an error occurred
 
 }
-
-Move::Move( int piece, int from_column, int from_row, int to_column, int to_row ) {
-    
-}
-
-Move::Move( int piece, char from_column, int from_row, char to_column, int to_row ) {
-    to_number( from_column );
-    to_number( to_column );
-
-
-}
-
-Move::Move( int from_column, int from_row, int to_column, int to_row ) {
-
-}
-
-Move::Move( int from_column, int from_row, char to_column, int to_row ) {
-
-}
-
-Move::Move( int from_column, int to_column, int to_row ) {
-
-}
-
-Move::Move( int from_column, char to_column, int to_row ) {
-
-}
-
 
 void Move::get_full_algebraic_notation( char note[] ) {
 

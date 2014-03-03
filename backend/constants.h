@@ -204,15 +204,43 @@ const uint64_t fill_down_table[8] = {
 0x000000000000001,
 };
 
+const uint64_t fill_diagnol_table[8] = {
+0x101010101010101,
+0x001010101010101,
+0x000010101010101,
+0x000000101010101,
+0x000000001010101,
+0x000000000010101,
+0x000000000000101,
+0x000000000000001,
+};
+
+const uint64_t fill_antidiagnol_table[8] = {
+0x101010101010101,
+0x001010101010101,
+0x000010101010101,
+0x000000101010101,
+0x000000001010101,
+0x000000000010101,
+0x000000000000101,
+0x000000000000001,
+};
+
 #define FILL_RIGHT( coord, x ) coord * fill_right_table[x]
 #define FILL_LEFT( coord, y )  coord - coord_table[0][y]
-#define FILL_DOWN( coord, x ) coord * fill_down_table[x]
+#define FILL_DOWN( coord, x )  coord * fill_down_table[x]
 #define FILL_UP( coord, x, y ) coord_table[x][0] * fill_down_table[7-y]
+
+#define FILL_LR( coord, x )
+#define FILL_LL( coord, y )
+#define FILL_UR( coord, x )
+#define FILL_UL( coord, x, y )
 
 const uint64_t black_squares = 0xAA55AA55AA55AA55;
 const uint64_t white_squares = 0x55AA55AA55AA55AA;
 const uint64_t universe      = 0xFFFFFFFFFFFFFFFF;
 const uint64_t empty         = 0x0000000000000000;
+
 
 // errors
 enum errors {

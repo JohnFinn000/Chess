@@ -16,6 +16,9 @@
  * =====================================================================================
  */
 
+#ifndef _CHESS_H_
+#define _CHESS_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "constants.h"
@@ -118,12 +121,6 @@ struct move_data {
 
 // move is not meant to do error checking only to resolve disambiguity in the notation
 class Move {
-    Move( int piece, int from_column, int from_row, int to_column, int to_row );
-    Move( int piece, char from_column, int from_row, char to_column, int to_row );
-    Move( int from_column, int from_row, int to_column, int to_row );
-    Move( int from_column, int from_row, char to_column, int to_row );
-    Move( int from_column, int to_column, int to_row );
-    Move( int from_column, char to_column, int to_row );
 
     void get_full_algebraic_notation( char note[] );
 
@@ -141,4 +138,6 @@ public:
 	int move( int fx, int fy, int tx, int ty );
 
 };
+
+#endif
 
