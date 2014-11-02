@@ -53,6 +53,11 @@ enum pieces {
     white_queen,    // 11
 };
 
+enum color_t {
+    color_black,
+    color_white
+};
+
 #define BLACK_OFFSET 0
 #define WHITE_OFFSET 6
 
@@ -91,25 +96,25 @@ const uint64_t initial_white_king     = 0x0000000000000008;
 const uint64_t initial_white_queen    = 0x0000000000000010;
 
 const uint64_t file[8] = {
-0x0101010101010101,
+0x0101010101010101, // a file
 0x0202020202020202,
 0x0404040404040404,
 0x0808080808080808,
 0x1010101010101010,
 0x2020202020202020,
 0x4040404040404040,
-0x8080808080808080,
+0x8080808080808080, // h file
 };
 
 const uint64_t rank[8] = {
-0x00000000000000FF,
+0x00000000000000FF, // 1 rank
 0x000000000000FF00,
 0x0000000000FF0000,
 0x00000000FF000000,
 0x000000FF00000000,
 0x0000FF0000000000,
 0x00FF000000000000,
-0xFF00000000000000,
+0xFF00000000000000, // 8 rank
 };
 
 const uint64_t diagnol[8] = {
@@ -282,6 +287,7 @@ const char *piece_name[] = {
 "WHITE_QUEEN",
 };
 
+// TODO these probably should be with the flags
 const char *flag_name[] = {
 "white queenside castle",
 "white kingside castle",

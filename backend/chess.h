@@ -53,25 +53,30 @@ public:
         black_en_passant_H     = 0x80000,
     };
 
-    uint64_t board[12];
-    // these are just aliases to the different layers
-    uint64_t &black_pawn;
-    uint64_t &black_rook;
-    uint64_t &black_bischops;
-    uint64_t &black_knights;
-    uint64_t &black_king;
-    uint64_t &black_queen;
-    uint64_t &white_pawn;
-    uint64_t &white_rook;
-    uint64_t &white_bischops;
-    uint64_t &white_knights;
-    uint64_t &white_king;
-    uint64_t &white_queen;
+    union { // TODO this union is new make sure everything is fixed
+        uint64_t board[12];
+        // these are just aliases to the different layers
+        struct {
+            uint64_t black_pawn;
+            uint64_t black_rook;
+            uint64_t black_bischops;
+            uint64_t black_knights;
+            uint64_t black_king;
+            uint64_t black_queen;
+            uint64_t white_pawn;
+            uint64_t white_rook;
+            uint64_t white_bischops;
+            uint64_t white_knights;
+            uint64_t white_king;
+            uint64_t white_queen;
+        };
+    };
 
 	Board();
 	uint64_t get_all();
 	uint64_t get_white();
 	uint64_t get_black();
+	uint64_t get_color( int color );
 	uint64_t get_pawn_moves(     int x, int y, int side );
 	uint64_t get_pawn_attack(    int x, int y, int side );
 	uint64_t get_rook_moves(     int x, int y, int side );
@@ -92,6 +97,7 @@ public:
 	uint64_t get_moves(  int x, int y );
 	uint64_t get_attack( int x, int y );
 
+    // reset the board to the starting position
 	void reset();
 
     // makes no attempt to determine the legality of the move
@@ -107,6 +113,7 @@ public:
 	void print_bitboard( uint64_t board );
 };
 
+// information about each move that is made
 struct move_data {
     int piece       : 3;
     int from_column : 3;
@@ -117,6 +124,8 @@ struct move_data {
     int capture : 1; // 0 - false, 1 - true
     int check   : 2; // 0 - false, 1 - check, 2 - mate
     int castle  : 2; // 0 - false, 1 - kingside, 2 - queenside
+
+    int unused  : 8;
 };
 
 // move is not meant to do error checking only to resolve disambiguity in the notation

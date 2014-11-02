@@ -25,20 +25,7 @@
 #include <cstring>
 
 
-Board::Board() :
-black_pawn( board[BLACK_PAWN] ),
-black_rook( board[BLACK_ROOK] ),
-black_bischops( board[BLACK_BISCHOPS] ),
-black_knights( board[BLACK_KNIGHTS] ),
-black_king( board[BLACK_KING] ),
-black_queen( board[BLACK_QUEEN] ),
-white_pawn( board[WHITE_PAWN] ),
-white_rook( board[WHITE_ROOK] ),
-white_bischops( board[WHITE_BISCHOPS] ),
-white_knights( board[WHITE_KNIGHTS] ),
-white_king( board[WHITE_KING] ),
-white_queen( board[WHITE_QUEEN] )
-{
+Board::Board() {
 	reset();
 }
 
@@ -53,6 +40,16 @@ uint64_t Board::get_white() {
 
 uint64_t Board::get_black() {
 	return ( board[0] | board[1] | board[2] | board[3] | board[4]  | board[5] );
+}
+
+uint64_t Board::get_color( int color ) {
+
+    switch( color ) {
+        case WHITE:
+            return ( board[6] | board[7] | board[8] | board[9] | board[10] | board[11] );
+        case BLACK:
+            return ( board[0] | board[1] | board[2] | board[3] | board[4]  | board[5] );
+    }
 }
 
 uint64_t Board::get_pawn_moves( int x, int y, int side ) {
@@ -98,11 +95,7 @@ uint64_t Board::get_rook_moves( int x, int y, int side ) {
 }
 
 uint64_t Board::get_rook_attack( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return get_rook_moves( x, y, side ) & get_white();
-	} else {
-		return get_rook_moves( x, y, side ) & get_black();
-	}
+    return get_rook_moves( x, y, side ) & get_color( 1-side );
 }
 
 uint64_t Board::get_bischop_moves( int x, int y, int side ) {
@@ -110,43 +103,23 @@ uint64_t Board::get_bischop_moves( int x, int y, int side ) {
 }
 
 uint64_t Board::get_bischop_attack( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return get_bischop_moves( x, y, side ) & get_white();
-	} else {
-		return get_bischop_moves( x, y, side ) & get_black();
-	}
+    return get_bischop_moves( x, y, side ) & get_color( 1-side );
 }
 
 uint64_t Board::get_knight_moves( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return KNIGHT_MOVEMENT( x, y ) & ~get_black();
-	} else {
-		return KNIGHT_MOVEMENT( x, y ) & ~get_white();
-	}
+    return KNIGHT_MOVEMENT( x, y ) & ~get_color( side );
 }
 
 uint64_t Board::get_knight_attack( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return get_knight_moves( x, y, side ) & get_white();
-	} else {
-		return get_knight_moves( x, y, side ) & get_black();
-	}
+    return get_knight_moves( x, y, side ) & get_color( 1-side );
 }
 
 uint64_t Board::get_king_moves( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return KING_MOVEMENT( x, y ) & ~get_black();
-	} else {
-		return KING_MOVEMENT( x, y ) & ~get_white();
-	}
+    return KING_MOVEMENT( x, y ) & ~get_color( side );
 }
 
 uint64_t Board::get_king_attack( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return get_king_moves( x, y, side ) & get_white();
-	} else {
-		return get_king_moves( x, y, side ) & get_black();
-	}
+    return get_king_moves( x, y, side ) & get_color( 1-side );
 }
 
 uint64_t Board::get_queen_moves( int x, int y, int side ) {
@@ -154,11 +127,7 @@ uint64_t Board::get_queen_moves( int x, int y, int side ) {
 }
 
 uint64_t Board::get_queen_attack( int x, int y, int side ) {
-	if( side == BLACK ) {
-		return get_queen_moves( x, y, side ) & get_white();
-	} else {
-		return get_queen_moves( x, y, side ) & get_black();
-	}
+    return get_queen_moves( x, y, side ) & get_color( 1-side );
 }
 
 uint64_t Board::get_under_attack( int x, int y, int side ) {
@@ -194,10 +163,10 @@ void Board::reset() {
 void Board::move( int fx, int fy, int tx, int ty ) {
 
     move_data new_move;
-    new_move.from_column = fx;
-    new_move.from_row = fy;
-    new_move.to_column = tx;
-    new_move.to_row = ty;
+    new_move.from_column    = fx;
+    new_move.from_row       = fy;
+    new_move.to_column      = tx;
+    new_move.to_row         = ty;
 
 	int layer = get_layer( fx, fy );
     new_move.piece = layer % 6;
@@ -242,31 +211,18 @@ void Board::move( int fx, int fy, int tx, int ty ) {
     }
 
     // move the actual piece
-    board[layer] &= ~coord_table[fx][fy];
-    board[layer] |= coord_table[tx][ty];
+    board[layer] &= ~coord_table[fx][fy]; // turn off a bit
+    board[layer] |= coord_table[tx][ty];  // turn on a bit
 
-    
-    struct move_data {
-        int piece       : 3;
-        int from_column : 3;
-        int from_row    : 3;
-        int to_column   : 3;
-        int to_row      : 3;
-
-        int capture : 1; // 0 - false, 1 - true
-        int check   : 2; // 0 - false, 1 - check, 2 - mate
-        int castle  : 2; // 0 - false, 1 - kingside, 2 - queenside
-    };
 }
 
 
 // finds the layer that has a piece on the coordinate specified
 // returns 12 if there is no piece on that place
 int Board::get_layer( int x, int y ) {
-	uint64_t coord = coord_table[x][y];
 	int layer;
 	for( layer = 0; layer < 12; ++layer ) {
-		if( board[layer] & coord ) {
+		if( board[layer] & coord_table[x][y] ) {
 			break;
 		}
 	}
@@ -331,10 +287,9 @@ void Board::print_board() {
 }
 
 void Board::print_flags() {
-    
+    printf("Flags:\n");
 	for( int i = 0; i < 20; ++i ) {
-
-        printf(" [%c]   %s\n", (flags & 1 << i) ? 'X' : ' ', flag_name[i] );
+        printf(" [%c]\t%s\n", (flags & 1 << i) ? 'X' : ' ', flag_name[i] );
 	}
 }
 
@@ -348,10 +303,10 @@ void Board::print_bitboard() {
 void Board::print_bitboard( uint64_t board ) {
     for( int y = 0; y < 8; ++y ) {
         for( int x = 0; x < 8; ++x ) {
-            if( (board & ((uint64_t) 1) << (x+(y*8))) > 0 ) {
-                printf("1 " );
+            if( board & coord_table[x][y] > 0 ) {
+                printf("1 ");
             } else {
-                printf("0 " );
+                printf("0 ");
             }
             
         }
@@ -390,7 +345,7 @@ int Engine::move( int fx, int fy, int tx, int ty ) {
         if( fx == tx ) {
             if( fy == 6 ) { // still in home row
                 if( ty == 4 ) {
-                    
+                    // turn on the proper en passant flag
                     
                     
                 }
@@ -427,7 +382,7 @@ int Engine::move( int fx, int fy, int tx, int ty ) {
 	case WHITE_PAWN:
 		if( fy == 1 ) { // still in home row
             if( ty == 3 ) {
-                
+                // turn on the proper en passant flag
                 
             }
 		}
